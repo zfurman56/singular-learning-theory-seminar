@@ -64,7 +64,12 @@
   <main>
     <section id="about">
       <h2>About the Seminar</h2>
-      <p>This weekly seminar brings together graduate students, faculty, and industry guests to discuss singular learning theory (SLT) and science of deep learning. We host a wide range of content, including paper presentations, invited talks, introductory lectures, and research updates. Organized by Zach Furman (University of Melbourne), Edmund Lau (UK AISI), Rohan Hitchcock (University of Melbourne), Zhongtian Chen (University of Melbourne), and Daniel Murfet (Timaeus).</p>
+      <p>This weekly seminar brings together graduate students, faculty, and industry guests to discuss singular learning theory (SLT) and science of deep learning. Everyone is welcome and encouraged to attend. We host a wide range of content, including paper presentations, invited talks, introductory lectures, and research updates. Organized by Zach Furman (University of Melbourne), Edmund Lau (UK AISI), Rohan Hitchcock (University of Melbourne), Zhongtian Chen (University of Melbourne), and Daniel Murfet (Timaeus).</p>
+    </section>
+
+    <section id="call-for-speakers">
+      <h2>Call for Speakers</h2>
+      <p>We're interested in hearing from anyone with work that might be relevant to us. Works-in-progress welcome! Email <a href="mailto:zach.furman1@gmail.com">zach.furman1@gmail.com</a> if you're interested in giving a talk. Talks don't have to follow the usual meeting time - we can accomodate your time zone.</p>
     </section>
 
     <section id="upcoming-talks">
@@ -76,15 +81,29 @@
       <h2>Past Talks</h2>
       <ul id="past-list"></ul>
     </section>
-
-    <section id="call-for-speakers">
-      <h2>Call for Speakers</h2>
-      <p>We're interested in hearing from anyone with work that might be relevant to us. Works-in-progress welcome! Email <a href="mailto:zach.furman1@gmail.com">zach.furman1@gmail.com</a> if you're interested in giving a talk. Talks don't have to follow the usual meeting time - we can accomodate your time zone.</p>
-    </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <script>
+    // ─────────── CONFIGURE YOUR WEEKLY MEETING UTC REFERENCE ───────────
+    // Pick any date when your seminar definitely falls at the right UTC time.
+    const MEETING_UTC_DATE = '2025-05-08';    // YYYY-MM-DD for a known meeting instance
+    const MEETING_UTC_TIME = '05:30:00';      // HH:MM:SS in UTC
+
+    // Parse that into a Date in UTC:
+    (function renderHeaderMeetingTime() {
+      const [Y, M, D] = MEETING_UTC_DATE.split('-').map(n => parseInt(n,10));
+      const [h, m, s] = MEETING_UTC_TIME.split(':').map(n => parseInt(n,10));
+      const utcDate = new Date(Date.UTC(Y, M-1, D, h, m, s));
+      // Convert to local zone
+      const localDay  = utcDate.toLocaleDateString(undefined, { weekday: 'long' });
+      const localTime = utcDate.toLocaleTimeString(undefined, {
+        hour: 'numeric', minute: 'numeric', timeZoneName: 'short'
+      });
+      document.getElementById('meeting-time').textContent =
+        `${localDay}s at ${localTime}`;
+    })();
+
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT24velJ4_HzdJOk6l7Xhx6AnbEcgFHwihab2VyCISb_HqyY6b_9VGhJwvlbxwnGlyOvc1do-yQMCTQ/pub?gid=0&single=true&output=csv';
     const today = new Date();
 
@@ -110,21 +129,7 @@
       header: true,
       skipEmptyLines: true,
       complete: ({ data }) => {
-        // 1) Inject local meeting time in header
-        const usual = data.find(r => r['USUAL MEETING TIME (UTC)']?.trim());
-        if (usual) {
-          const [h, m, s] = usual['USUAL MEETING TIME (UTC)'].trim().split(':').map(n => parseInt(n,10));
-          const dummyUtc = new Date(Date.UTC(2000,0,1,h,m,s||0));
-          const localTime = dummyUtc.toLocaleTimeString(undefined, {
-            hour: 'numeric',
-            minute: 'numeric',
-            timeZoneName: 'short'
-          });
-          document.getElementById('meeting-time').textContent =
-            `Thursdays at ${localTime}`;
-        }
-
-        // 2) Parse, filter, sort talks
+        // 1) Parse, filter, sort talks
         const talks = data
           .filter(r => {
             const c = (r['CYCLE']||'').toLowerCase();
@@ -146,7 +151,7 @@
         const upcoming = talks.filter(t => t.datetime >= today).slice(0,3);
         const past     = talks.filter(t => t.datetime <  today).reverse();
 
-        // 3) Render lists, converting to user's local zone automatically
+        // 2) Render lists, converting to user's local zone automatically
         function renderList(id, items) {
           const ul = document.getElementById(id);
           items.forEach(t => {
