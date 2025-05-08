@@ -1,2 +1,187 @@
-test
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Singular Learning Theory Seminar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #fafafa;
+      color: #333;
+      line-height: 1.6;
+    }
+    header {
+      background: #fff;
+      border-bottom: 1px solid #eaeaea;
+      padding: 1rem;
+      text-align: center;
+    }
+    header h1 { margin: 0; font-weight: 600; }
+    header p {
+      margin: 0.25rem 0;
+      font-size: 0.95rem;
+      color: #555;
+    }
+    main {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    section { margin-bottom: 2rem; }
+    h2 {
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 0.25rem;
+    }
+    ul { list-style: none; margin: 0; padding: 0; }
+    li {
+      background: #fff;
+      border: 1px solid #eaeaea;
+      border-radius: 4px;
+      padding: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .title { font-weight: 600; margin: 0 0 0.25rem; }
+    .speaker { font-size: 0.95rem; color: #444; margin-bottom: 0.25rem; }
+    .date { font-size: 0.9rem; color: #666; }
+    .recording { margin-top: 0.5rem; }
+    .recording a, a { color: #0070f3; text-decoration: none; }
+    .recording a:hover, a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Singular Learning Theory Seminar</h1>
+    <p><span id="meeting-time">Loading meeting time...</span> · <a href="https://unimelb.zoom.us/j/83683171849?pwd=6Zf81kg5YyzscLxA7xF0ukvANbf9Ur.1">Zoom link</a> · <a href="https://groups.google.com/g/singular-learning-theory-seminar/">Mailing list</a></p>
+    <p>Contact: <a href="mailto:zach.furman1@gmail.com">zach.furman1@gmail.com</a></p>
+  </header>
+
+  <main>
+    <section id="about">
+      <h2>About the Seminar</h2>
+      <p>This weekly seminar brings together graduate students, faculty, and industry guests to discuss singular learning theory (SLT) and science of deep learning. We host a wide range of content, including paper presentations, invited talks, introductory lectures, and research updates. Organized by Zach Furman (University of Melbourne), Edmund Lau (UK AISI), Rohan Hitchcock (University of Melbourne), Zhongtian Chen (University of Melbourne), and Daniel Murfet (Timaeus).</p>
+    </section>
+
+    <section id="upcoming-talks">
+      <h2>Upcoming Talks</h2>
+      <ul id="upcoming-list"></ul>
+    </section>
+
+    <section id="past-talks">
+      <h2>Past Talks</h2>
+      <ul id="past-list"></ul>
+    </section>
+
+    <section id="call-for-speakers">
+      <h2>Call for Speakers</h2>
+      <p>We're interested in hearing from anyone with work that might be relevant to us. Works-in-progress welcome! Email <a href="mailto:zach.furman1@gmail.com">zach.furman1@gmail.com</a> if you're interested in giving a talk. Talks don't have to follow the usual meeting time - we can accomodate your time zone.</p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <script>
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT24velJ4_HzdJOk6l7Xhx6AnbEcgFHwihab2VyCISb_HqyY6b_9VGhJwvlbxwnGlyOvc1do-yQMCTQ/pub?gid=0&single=true&output=csv';
+    const today = new Date();
+
+    // Combine DATE (UTC) + TIME (UTC) into a true UTC Date
+    function parseUTCDateTime(dateCol, timeCol) {
+      const [ , dm ] = dateCol.split(', ');
+      const [day, monthName, year] = dm.split(' ');
+      const months = {
+        January:0, February:1, March:2, April:3, May:4, June:5,
+        July:6, August:7, September:8, October:9, November:10, December:11
+      };
+      const [h, m, s] = timeCol.split(':').map(n => parseInt(n,10));
+      return new Date(Date.UTC(
+        parseInt(year,10),
+        months[monthName]||0,
+        parseInt(day,10),
+        h, m, s||0
+      ));
+    }
+
+    Papa.parse(CSV_URL, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: ({ data }) => {
+        // 1) Inject local meeting time in header
+        const usual = data.find(r => r['USUAL MEETING TIME (UTC)']?.trim());
+        if (usual) {
+          const [h, m, s] = usual['USUAL MEETING TIME (UTC)'].trim().split(':').map(n => parseInt(n,10));
+          const dummyUtc = new Date(Date.UTC(2000,0,1,h,m,s||0));
+          const localTime = dummyUtc.toLocaleTimeString(undefined, {
+            hour: 'numeric',
+            minute: 'numeric',
+            timeZoneName: 'short'
+          });
+          document.getElementById('meeting-time').textContent =
+            `Thursdays at ${localTime}`;
+        }
+
+        // 2) Parse, filter, sort talks
+        const talks = data
+          .filter(r => {
+            const c = (r['CYCLE']||'').toLowerCase();
+            return c && c !== 'skip' && c !== 'meta';
+          })
+          .map(r => {
+            const dt = parseUTCDateTime(r['DATE (UTC)'], r['TIME (UTC)']);
+            return {
+              datetime:  dt,
+              cycle:     (r['CYCLE']||'').trim(),
+              speaker:   (r['SPEAKER']||'').trim(),
+              title:     (r['TITLE']||'').trim(),
+              recording: (r['RECORDING']||'').trim()
+            };
+          })
+          .filter(t => !isNaN(t.datetime))
+          .sort((a,b) => a.datetime - b.datetime);
+
+        const upcoming = talks.filter(t => t.datetime >= today).slice(0,3);
+        const past     = talks.filter(t => t.datetime <  today).reverse();
+
+        // 3) Render lists, converting to user's local zone automatically
+        function renderList(id, items) {
+          const ul = document.getElementById(id);
+          items.forEach(t => {
+            const label = t.cycle.charAt(0).toUpperCase() + t.cycle.slice(1) + ':';
+            const localDate = t.datetime.toLocaleDateString(undefined, {
+              weekday: 'long',
+              year:    'numeric',
+              month:   'long',
+              day:     'numeric'
+            });
+            const localTime = t.datetime.toLocaleTimeString(undefined, {
+              hour:         'numeric',
+              minute:       'numeric',
+              timeZoneName: 'short'
+            });
+            const li = document.createElement('li');
+            li.innerHTML = `
+              <div class="title">${label} ${t.title}</div>
+              <div class="speaker">${t.speaker}</div>
+              <div class="date">${localDate} at ${localTime}</div>
+              ${t.recording
+                ? `<div class="recording">
+                     <a href="${t.recording}" target="_blank" rel="noopener">🎥 Recording</a>
+                   </div>`
+                : ''}
+            `;
+            ul.appendChild(li);
+          });
+        }
+
+        renderList('upcoming-list', upcoming);
+        renderList('past-list', past);
+      }
+    });
+  </script>
+</body>
+</html>
 
