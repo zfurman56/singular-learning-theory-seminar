@@ -57,7 +57,7 @@
 <body>
   <header>
     <h1>Singular Learning Theory Seminar</h1>
-    <p><span id="meeting-time">Loading meeting time...</span> · <a href="https://unimelb.zoom.us/j/83683171849?pwd=6Zf81kg5YyzscLxA7xF0ukvANbf9Ur.1">Zoom link</a> · <a href="https://groups.google.com/g/singular-learning-theory-seminar/">Mailing list</a></p>
+    <p><span id="meeting-time"></span> · <a href="https://unimelb.zoom.us/j/83683171849?pwd=6Zf81kg5YyzscLxA7xF0ukvANbf9Ur.1">Zoom link</a> · <a href="https://groups.google.com/g/singular-learning-theory-seminar/">Mailing list</a></p>
     <p>Contact: <a href="mailto:zach.furman1@gmail.com">zach.furman1@gmail.com</a></p>
   </header>
 
@@ -74,12 +74,12 @@
 
     <section id="upcoming-talks">
       <h2>Upcoming Talks</h2>
-      <ul id="upcoming-list"></ul>
+      <ul id="upcoming-list">Loading...</ul>
     </section>
 
     <section id="past-talks">
       <h2>Past Talks</h2>
-      <ul id="past-list"></ul>
+      <ul id="past-list">Loading...</ul>
     </section>
   </main>
 
@@ -154,6 +154,7 @@
         // 2) Render lists, converting to user's local zone automatically
         function renderList(id, items) {
           const ul = document.getElementById(id);
+          ul.textContent = ``; // Remove loading text
           items.forEach(t => {
             const label = t.cycle.charAt(0).toUpperCase() + t.cycle.slice(1) + ':';
             const localDate = t.datetime.toLocaleDateString(undefined, {
